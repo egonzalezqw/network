@@ -1,7 +1,8 @@
 import streamlit as st
+import random
 
 # =================================================
-# 🧠 ESTADO
+# 🧠 ESTADO SEGURO
 # =================================================
 def init_state():
     defaults = {
@@ -16,7 +17,7 @@ def init_state():
 
 
 # =================================================
-# 🎮 PREGUNTAS (BÁSICAS / NO TÉCNICAS)
+# 🎮 PREGUNTAS (6 FIJAS)
 # =================================================
 QUESTIONS = [
     {
@@ -26,81 +27,86 @@ QUESTIONS = [
     },
     {
         "q": "¿Qué permite separar redes como oficina y producción?",
-        "options": ["VLANs", "Mouse inalámbrico", "Bluetooth"],
+        "options": ["VLANs", "Bluetooth", "HDMI"],
         "a": "VLANs"
     },
     {
-        "q": "¿Qué pasa si todo está en una sola red sin separación?",
-        "options": ["Más seguridad", "Más riesgo", "Más orden"],
+        "q": "¿Qué pasa si no hay separación de redes?",
+        "options": ["Más seguridad", "Más riesgo", "Más velocidad"],
         "a": "Más riesgo"
     },
     {
         "q": "¿Qué es OT en una fábrica?",
-        "options": ["Sistemas industriales", "Red social", "Videojuegos"],
+        "options": ["Sistemas industriales", "Red social", "Juego"],
         "a": "Sistemas industriales"
     },
     {
         "q": "¿Por qué se separa IT y OT?",
-        "options": ["Para seguridad", "Para jugar mejor", "Para más cables"],
+        "options": ["Para seguridad", "Para jugar", "Para decorar la red"],
         "a": "Para seguridad"
     },
     {
         "q": "¿Qué ayuda a proteger una red?",
-        "options": ["Buenas prácticas y segmentación", "Dejar todo abierto", "Quitar contraseñas"],
-        "a": "Buenas prácticas y segmentación"
+        "options": ["Segmentación y buenas prácticas", "Dejar todo abierto", "Quitar contraseñas"],
+        "a": "Segmentación y buenas prácticas"
     }
 ]
 
 
 # =================================================
-# 🎭 MENSAJES DIVERTIDOS
+# 😄 MENSAJES DIVERTIDOS
 # =================================================
 def msg_correct():
     return [
-        "😎 ¡Correcto! Hackeaste el conocimiento con éxito.",
-        "🧠 ¡Bien hecho! Eres casi un ingeniero de redes Jedi.",
-        "🚀 ¡Excelente! La red está orgullosa de ti."
+        "😎 ¡Correcto! La red te aplaude en silencio.",
+        "🚀 ¡Bien! Nivel de ingeniero en progreso.",
+        "🧠 ¡Excelente! Casi eres administrador de redes OT."
     ]
 
 
 def msg_wrong():
     return [
-        "😂 No exactamente… pero la red sigue funcionando, respira tranquilo.",
-        "🤔 Casi… pero esa respuesta tomó el camino equivocado en la autopista de datos.",
-        "🙈 Ups… la red se confundió contigo, pero todo bien."
+        "😂 Ups… la red se confundió, pero sigue viva.",
+        "🤔 Casi… pero esa ruta no es la correcta.",
+        "🙈 No exactamente… la red sobrevivirá a tu intento."
     ]
 
 
 # =================================================
-# 🎨 UI
+# CONFIG STREAMLIT
 # =================================================
-st.set_page_config(page_title="Cyber OT Quiz", page_icon="🛡️", layout="wide")
+st.set_page_config(
+    page_title="Cyber OT Quiz",
+    page_icon="🛡️",
+    layout="wide"
+)
 
 st.title("🛡️ Cyber OT Redes - Quiz Básico")
-st.caption("Aprende redes, VLANs y OT de forma sencilla y divertida")
+st.caption("Aprende redes, VLANs e IT/OT de forma simple")
 
 init_state()
 
-q = QUESTIONS[st.session_state.index]
-
-st.sidebar.metric("Puntaje", st.session_state.score)
-st.sidebar.progress(st.session_state.index / len(QUESTIONS))
+# =================================================
+# 🔐 CONTROL DE FIN SEGURO (EVITA INDEX ERROR)
+# =================================================
+if st.session_state.index >= len(QUESTIONS):
+    st.session_state.finished = True
 
 
 # =================================================
-# 🧠 FINAL DEL JUEGO
+# 🏁 PANTALLA FINAL
 # =================================================
 if st.session_state.finished:
 
     st.success("🎉 Quiz terminado")
 
-    st.metric("Resultado final", st.session_state.score)
+    st.metric("Puntaje final", st.session_state.score)
 
     if st.session_state.score >= 5:
         st.balloons()
         st.markdown("🏆 ¡Buen trabajo! Entiendes lo básico de redes OT.")
     else:
-        st.markdown("🙂 ¡Buen intento! La red necesita más práctica contigo.")
+        st.markdown("🙂 Buen intento. Sigue practicando redes.")
 
     if st.button("🔄 Reiniciar"):
         st.session_state.score = 0
@@ -109,9 +115,14 @@ if st.session_state.finished:
         st.rerun()
 
 # =================================================
-# 🎮 JUEGO
+# 🎮 JUEGO PRINCIPAL
 # =================================================
 else:
+
+    q = QUESTIONS[st.session_state.index]
+
+    st.sidebar.metric("Puntaje", st.session_state.score)
+    st.sidebar.progress(st.session_state.index / len(QUESTIONS))
 
     st.subheader(q["q"])
 
@@ -120,13 +131,12 @@ else:
     if st.button("Responder"):
 
         if choice == q["a"]:
-            import random
             st.success(random.choice(msg_correct()))
             st.session_state.score += 1
         else:
-            import random
             st.warning(random.choice(msg_wrong()))
 
+        # avanzar seguro sin romper índice
         st.session_state.index += 1
 
         if st.session_state.index >= len(QUESTIONS):
