@@ -1,213 +1,142 @@
 import streamlit as st
 import random
-import time
 
-# -----------------------------
-# CONFIG
-# -----------------------------
-st.set_page_config(
-    page_title="Cyber OT Range",
-    page_icon="🛡️",
-    layout="wide"
-)
+# =================================================
+# 🧠 STATE ENGINE (SIEMPRE CONSISTENTE)
+# =================================================
+def init_state():
+    defaults = {
+        "score": 0,
+        "health": 100,
+        "incident_id": None,
+        "logs": [],
+        "running": True
+    }
 
-# -----------------------------
-# STATE INIT
-# -----------------------------
-if "score" not in st.session_state:
-    st.session_state.score = 0
+    for k, v in defaults.items():
+        if k not in st.session_state:
+            st.session_state[k] = v
 
-if "health" not in st.session_state:
-    st.session_state.health = 100
 
-if "alerts" not in st.session_state:
-    st.session_state.alerts = []
-
-if "incident" not in st.session_state:
-    st.session_state.incident = None
-
-# -----------------------------
-# STYLE
-# -----------------------------
-st.markdown("""
-<style>
-.stApp {
-    background-color: #050A18;
-    color: #E6F1FF;
-}
-
-.panel {
-    background: #0B1220;
-    padding: 15px;
-    border-radius: 12px;
-    border: 1px solid #1F2A44;
-}
-
-.alert {
-    background: #2A0F14;
-    border-left: 5px solid red;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.success {
-    background: #0F2A1C;
-    border-left: 5px solid #22C55E;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.warning {
-    background: #2A2410;
-    border-left: 5px solid #FACC15;
-    padding: 10px;
-    border-radius: 10px;
-}
-
-.stButton>button {
-    width: 100%;
-    border-radius: 10px;
-    font-weight: bold;
-}
-</style>
-""", unsafe_allow_html=True)
-
-# -----------------------------
-# HEADER
-# -----------------------------
-st.title("🛡️ CYBER OT DEFENDER - LIVE RANGE")
-st.caption("Industrial Network Security Simulation (Real-Time Events)")
-
-# -----------------------------
-# SIDEBAR HUD
-# -----------------------------
-with st.sidebar:
-    st.markdown("## 🎮 SYSTEM STATUS")
-
-    st.metric("Score", st.session_state.score)
-    st.metric("Health", st.session_state.health)
-
-    st.progress(st.session_state.health / 100)
-
-    st.markdown("---")
-    st.write("⚠️ OT Network: MONITORED")
-
-# -----------------------------
-# INCIDENT GENERATOR
-# -----------------------------
-incidents = [
+# =================================================
+# 🚨 INCIDENT ENGINE (SIN STRINGS FRÁGILES)
+# =================================================
+INCIDENTS = [
     {
-        "title": "🚨 Malware detected in HMI",
-        "damage": 15,
-        "fix": "Isolate VLAN OT"
+        "id": "malware_hmi",
+        "title": "Malware detected in HMI",
+        "options": ["Isolate OT VLAN", "Ignore alert", "Reboot PLC"],
+        "correct": "Isolate OT VLAN",
+        "impact": 20
     },
     {
-        "title": "⚠️ Unauthorized device connected",
-        "damage": 10,
-        "fix": "Block MAC address"
+        "id": "unauth_device",
+        "title": "Unauthorized device detected",
+        "options": ["Block MAC address", "Disable firewall", "Open port 80"],
+        "correct": "Block MAC address",
+        "impact": 20
     },
     {
-        "title": "🔥 Lateral movement detected",
-        "damage": 20,
-        "fix": "Enable segmentation"
+        "id": "lateral_movement",
+        "title": "Lateral movement detected in OT network",
+        "options": ["Enable segmentation", "Increase bandwidth", "Disable logs"],
+        "correct": "Enable segmentation",
+        "impact": 25
     }
 ]
 
-if st.session_state.incident is None:
-    st.session_state.incident = random.choice(incidents)
 
-incident = st.session_state.incident
+def get_incident():
+    return random.choice(INCIDENTS)
 
-# -----------------------------
-# MAIN UI GRID
-# -----------------------------
-col1, col2 = st.columns([2, 1])
 
-# -----------------------------
-# NETWORK MAP (SIMULATED)
-# -----------------------------
-with col1:
+# =================================================
+# ⚙️ ACTION ENGINE
+# =================================================
+def apply_action(selected, incident):
 
-    st.markdown("## 🌐 OT Network Map")
+    if selected == incident["correct"]:
+        st.session_state.score += incident["impact"]
+        st.session_state.health = min(100, st.session_state.health + 5)
+        st.session_state.logs.append(f"✔ Correct response: {incident['title']}")
+        return True
+    else:
+        st.session_state.health -= 10
+        st.session_state.logs.append(f"✖ Wrong response: {incident['title']}")
+        return False
 
-    st.markdown("""
-    ```
-    [ INTERNET ]
-         |
-    [ FIREWALL ]
-         |
-    ├── [ IT NETWORK ] 🖥️
-    |
-    ├── [ DMZ ] 🛡️
-    |
-    └── [ OT NETWORK ] 🏭 ⚠️ ACTIVE THREATS
-    ```
-    """)
 
-    st.markdown("---")
+def next_incident():
+    st.session_state.incident_id = get_incident()
+
+
+# =================================================
+# 🎨 UI ENGINE
+# =================================================
+def render_hud():
+
+    st.sidebar.title("🛡️ SOC CONTROL PANEL")
+    st.sidebar.metric("Score", st.session_state.score)
+    st.sidebar.metric("Health", st.session_state.health)
+
+    st.sidebar.progress(st.session_state.health / 100)
+
+    st.sidebar.markdown("---")
+    st.sidebar.write("📜 Logs")
+
+    for log in st.session_state.logs[-6:]:
+        st.sidebar.write("•", log)
+
+
+def render_incident(incident):
+
+    st.title("🛡️ CYBER OT SOC SIMULATOR")
 
     st.markdown("## 🚨 Active Incident")
+    st.error(incident["title"])
 
-    st.markdown(f'<div class="alert">{incident["title"]}</div>', unsafe_allow_html=True)
+    choice = st.radio("Select response:", incident["options"])
 
-    st.markdown("### 🧠 Response Options")
+    if st.button("Execute Response"):
 
-    c1, c2, c3 = st.columns(3)
+        result = apply_action(choice, incident)
 
-    with c1:
-        if st.button("🛑 Isolate OT VLAN"):
-            if incident["fix"] == "Isolate VLAN OT":
-                st.session_state.score += 20
-                st.session_state.health += 5
-                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
-            else:
-                st.session_state.health -= 10
+        if result:
+            st.success("Correct mitigation applied")
+        else:
+            st.warning("Incorrect action taken")
 
-            st.session_state.incident = None
-            st.rerun()
-
-    with c2:
-        if st.button("🚫 Block Device"):
-            if incident["fix"] == "Block MAC address":
-                st.session_state.score += 20
-                st.session_state.health += 5
-                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
-            else:
-                st.session_state.health -= 10
-
-            st.session_state.incident = None
-            st.rerun()
-
-    with c3:
-        if st.button("🧱 Enable Segmentation"):
-            if incident["fix"] == "Enable segmentation":
-                st.session_state.score += 20
-                st.session_state.health += 5
-                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
-            else:
-                st.session_state.health -= 10
-
-            st.session_state.incident = None
-            st.rerun()
-
-# -----------------------------
-# CONTROL PANEL
-# -----------------------------
-with col2:
-
-    st.markdown("## 🛠️ Control Panel")
-
-    if st.button("🔍 Scan Network"):
-        st.session_state.score += 5
-        st.session_state.alerts.append("Scan completed: No critical vulnerabilities found")
+        next_incident()
         st.rerun()
 
-    if st.button("🧯 Deploy Firewall Rules"):
-        st.session_state.score += 10
-        st.session_state.health += 5
-        st.session_state.alerts.append("Firewall rules updated")
+
+# =================================================
+# 🧠 SAFETY CHECK (NO BLACK SCREEN EVER)
+# =================================================
+def safe_state():
+    if st.session_state.health <= 0:
+        st.session_state.running = False
+
+    if st.session_state.incident_id is None:
+        next_incident()
+
+
+# =================================================
+# 🚀 APP ENTRY POINT
+# =================================================
+init_state()
+safe_state()
+render_hud()
+
+if not st.session_state.running:
+    st.error("💀 SYSTEM COMPROMISED")
+    st.write("Final Score:", st.session_state.score)
+
+    if st.button("Restart Simulation"):
+        for k in st.session_state.keys():
+            del st.session_state[k]
         st.rerun()
 
-    if st.button("📡 Enable Monitoring"):
-        st.session_state.score += 5
-        st.session_state.alerts.append("Monitoring ac_
+else:
+    incident = st.session_state.incident_id
+    render_incident(incident)
