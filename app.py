@@ -1,199 +1,213 @@
 import streamlit as st
+import random
 import time
 
 # -----------------------------
 # CONFIG
 # -----------------------------
 st.set_page_config(
-    page_title="Cyber OT Defender",
+    page_title="Cyber OT Range",
     page_icon="🛡️",
     layout="wide"
 )
 
 # -----------------------------
-# STATE SAFE INIT
+# STATE INIT
 # -----------------------------
-DEFAULT_STATE = {
-    "score": 0,
-    "mission": 0,
-    "finished": False
-}
+if "score" not in st.session_state:
+    st.session_state.score = 0
 
-for k, v in DEFAULT_STATE.items():
-    if k not in st.session_state:
-        st.session_state[k] = v
+if "health" not in st.session_state:
+    st.session_state.health = 100
+
+if "alerts" not in st.session_state:
+    st.session_state.alerts = []
+
+if "incident" not in st.session_state:
+    st.session_state.incident = None
 
 # -----------------------------
-# STYLE (CYBER UI)
+# STYLE
 # -----------------------------
 st.markdown("""
 <style>
-
 .stApp {
-    background-color: #070B14;
+    background-color: #050A18;
     color: #E6F1FF;
-    font-family: Arial;
 }
 
-/* HUD PANEL */
-.hud {
+.panel {
     background: #0B1220;
     padding: 15px;
     border-radius: 12px;
     border: 1px solid #1F2A44;
 }
 
-/* TITLES */
-h1, h2, h3 {
-    color: #38BDF8 !important;
-}
-
-/* BUTTONS */
-.stButton>button {
-    width: 100%;
-    border-radius: 10px;
-    height: 3em;
-    font-weight: bold;
-    background-color: #1F6FEB;
-    color: white;
-}
-
-/* ALERT BOX STYLE */
 .alert {
-    padding: 15px;
-    border-radius: 10px;
-    background: #1A1020;
+    background: #2A0F14;
     border-left: 5px solid red;
-    color: #fff;
+    padding: 10px;
+    border-radius: 10px;
 }
 
 .success {
-    padding: 15px;
-    border-radius: 10px;
-    background: #0D1F17;
+    background: #0F2A1C;
     border-left: 5px solid #22C55E;
+    padding: 10px;
+    border-radius: 10px;
 }
 
+.warning {
+    background: #2A2410;
+    border-left: 5px solid #FACC15;
+    padding: 10px;
+    border-radius: 10px;
+}
+
+.stButton>button {
+    width: 100%;
+    border-radius: 10px;
+    font-weight: bold;
+}
 </style>
 """, unsafe_allow_html=True)
 
 # -----------------------------
 # HEADER
 # -----------------------------
-st.title("🛡️ CYBER OT DEFENDER")
-st.caption("Industrial Security Simulation - Protect the Factory Network")
+st.title("🛡️ CYBER OT DEFENDER - LIVE RANGE")
+st.caption("Industrial Network Security Simulation (Real-Time Events)")
 
 # -----------------------------
-# HUD
+# SIDEBAR HUD
 # -----------------------------
 with st.sidebar:
-    st.markdown("## 🎮 SYSTEM HUD")
+    st.markdown("## 🎮 SYSTEM STATUS")
 
-    st.markdown("### 📊 Score")
-    st.metric("", st.session_state.score)
+    st.metric("Score", st.session_state.score)
+    st.metric("Health", st.session_state.health)
 
-    st.markdown("### 🧭 Mission")
-    st.metric("", st.session_state.mission)
-
-    progress = min(st.session_state.mission / 4, 1)
-    st.progress(progress)
+    st.progress(st.session_state.health / 100)
 
     st.markdown("---")
-    st.write("⚠️ OT Network Status: STABLE")
+    st.write("⚠️ OT Network: MONITORED")
 
 # -----------------------------
-# MISSIONS DATA (ENGINE)
+# INCIDENT GENERATOR
 # -----------------------------
-missions = [
+incidents = [
     {
-        "title": "🌐 Mission 1: Network Breach Analysis",
-        "text": "A new OT network is being deployed in a factory. Identify the correct purpose of a network.",
-        "question": "¿Cuál es el objetivo de una red?",
-        "options": [
-            "Apagar servidores",
-            "Compartir información y recursos",
-            "Romper sistemas OT"
-        ],
-        "answer": "Compartir información y recursos",
-        "reward": 10
+        "title": "🚨 Malware detected in HMI",
+        "damage": 15,
+        "fix": "Isolate VLAN OT"
     },
     {
-        "title": "🔀 Mission 2: VLAN Segmentation",
-        "text": "Se detecta tráfico cruzado entre OT y invitados.",
-        "question": "¿Qué tecnología separa redes correctamente?",
-        "options": ["VLANs", "Bluetooth", "HDMI"],
-        "answer": "VLANs",
-        "reward": 20
+        "title": "⚠️ Unauthorized device connected",
+        "damage": 10,
+        "fix": "Block MAC address"
     },
     {
-        "title": "🚨 Mission 3: Attack Detected",
-        "text": "Un dispositivo infectado intenta moverse lateralmente.",
-        "question": "¿Cómo se contiene el ataque?",
-        "options": ["Más cables", "Usar VLANs", "Reiniciar router"],
-        "answer": "Usar VLANs",
-        "reward": 25
-    },
-    {
-        "title": "🏭 Mission 4: IT vs OT Control",
-        "text": "Clasifica el entorno industrial.",
-        "question": "¿Qué pertenece a OT?",
-        "options": ["Servidor web", "PLC industrial", "Correo corporativo"],
-        "answer": "PLC industrial",
-        "reward": 30
+        "title": "🔥 Lateral movement detected",
+        "damage": 20,
+        "fix": "Enable segmentation"
     }
 ]
 
-# -----------------------------
-# GAME COMPLETED
-# -----------------------------
-if st.session_state.finished:
+if st.session_state.incident is None:
+    st.session_state.incident = random.choice(incidents)
 
-    st.markdown("## 🏆 MISSION COMPLETE")
-
-    st.success(f"Puntaje final: {st.session_state.score}")
-
-    if st.session_state.score >= 80:
-        st.balloons()
-        st.markdown("### 🏆 OT SECURITY ARCHITECT")
-    elif st.session_state.score >= 50:
-        st.markdown("### 🛡️ OT SECURITY OPERATOR")
-    else:
-        st.markdown("### ⚠️ NETWORK VULNERABLE")
-
-    if st.button("🔄 Restart Simulation"):
-        st.session_state.score = 0
-        st.session_state.mission = 0
-        st.session_state.finished = False
-        st.rerun()
+incident = st.session_state.incident
 
 # -----------------------------
-# GAME LOOP
+# MAIN UI GRID
 # -----------------------------
-else:
+col1, col2 = st.columns([2, 1])
 
-    m = missions[st.session_state.mission]
+# -----------------------------
+# NETWORK MAP (SIMULATED)
+# -----------------------------
+with col1:
 
-    st.markdown(f"## {m['title']}")
-    st.write(m["text"])
+    st.markdown("## 🌐 OT Network Map")
+
+    st.markdown("""
+    ```
+    [ INTERNET ]
+         |
+    [ FIREWALL ]
+         |
+    ├── [ IT NETWORK ] 🖥️
+    |
+    ├── [ DMZ ] 🛡️
+    |
+    └── [ OT NETWORK ] 🏭 ⚠️ ACTIVE THREATS
+    ```
+    """)
 
     st.markdown("---")
-    st.subheader(m["question"])
 
-    choice = st.radio("Selecciona una opción:", m["options"])
+    st.markdown("## 🚨 Active Incident")
 
-    if st.button("🚀 Execute Action"):
+    st.markdown(f'<div class="alert">{incident["title"]}</div>', unsafe_allow_html=True)
 
-        if choice == m["answer"]:
-            st.markdown('<div class="success">✔ Access Granted - Correct Decision</div>', unsafe_allow_html=True)
-            st.session_state.score += m["reward"]
-        else:
-            st.markdown('<div class="alert">✖ Security Mistake Detected</div>', unsafe_allow_html=True)
+    st.markdown("### 🧠 Response Options")
 
-        time.sleep(0.8)
+    c1, c2, c3 = st.columns(3)
 
-        st.session_state.mission += 1
+    with c1:
+        if st.button("🛑 Isolate OT VLAN"):
+            if incident["fix"] == "Isolate VLAN OT":
+                st.session_state.score += 20
+                st.session_state.health += 5
+                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
+            else:
+                st.session_state.health -= 10
 
-        if st.session_state.mission >= len(missions):
-            st.session_state.finished = True
+            st.session_state.incident = None
+            st.rerun()
 
+    with c2:
+        if st.button("🚫 Block Device"):
+            if incident["fix"] == "Block MAC address":
+                st.session_state.score += 20
+                st.session_state.health += 5
+                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
+            else:
+                st.session_state.health -= 10
+
+            st.session_state.incident = None
+            st.rerun()
+
+    with c3:
+        if st.button("🧱 Enable Segmentation"):
+            if incident["fix"] == "Enable segmentation":
+                st.session_state.score += 20
+                st.session_state.health += 5
+                st.markdown('<div class="success">Correct Response</div>', unsafe_allow_html=True)
+            else:
+                st.session_state.health -= 10
+
+            st.session_state.incident = None
+            st.rerun()
+
+# -----------------------------
+# CONTROL PANEL
+# -----------------------------
+with col2:
+
+    st.markdown("## 🛠️ Control Panel")
+
+    if st.button("🔍 Scan Network"):
+        st.session_state.score += 5
+        st.session_state.alerts.append("Scan completed: No critical vulnerabilities found")
         st.rerun()
+
+    if st.button("🧯 Deploy Firewall Rules"):
+        st.session_state.score += 10
+        st.session_state.health += 5
+        st.session_state.alerts.append("Firewall rules updated")
+        st.rerun()
+
+    if st.button("📡 Enable Monitoring"):
+        st.session_state.score += 5
+        st.session_state.alerts.append("Monitoring ac_
