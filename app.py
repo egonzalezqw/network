@@ -5,48 +5,73 @@ import time
 # CONFIG
 # -----------------------------
 st.set_page_config(
-    page_title="Network Defender Challenge",
+    page_title="Cyber OT Defender",
     page_icon="🛡️",
     layout="wide"
 )
 
 # -----------------------------
-# SESSION STATE INIT
+# STATE SAFE INIT
 # -----------------------------
-if "score" not in st.session_state:
-    st.session_state.score = 0
+DEFAULT_STATE = {
+    "score": 0,
+    "mission": 0,
+    "finished": False
+}
 
-if "level" not in st.session_state:
-    st.session_state.level = 1
-
-if "finished" not in st.session_state:
-    st.session_state.finished = False
+for k, v in DEFAULT_STATE.items():
+    if k not in st.session_state:
+        st.session_state[k] = v
 
 # -----------------------------
-# STYLE (FIXED STREAMLIT SELECTORS)
+# STYLE (CYBER UI)
 # -----------------------------
 st.markdown("""
 <style>
+
 .stApp {
-    background-color: #0E1117;
-    color: white;
+    background-color: #070B14;
+    color: #E6F1FF;
+    font-family: Arial;
 }
 
-.block-container {
-    padding-top: 2rem;
-    color: white;
+/* HUD PANEL */
+.hud {
+    background: #0B1220;
+    padding: 15px;
+    border-radius: 12px;
+    border: 1px solid #1F2A44;
 }
 
-h1, h2, h3, p, label, span {
-    color: white !important;
+/* TITLES */
+h1, h2, h3 {
+    color: #38BDF8 !important;
 }
 
+/* BUTTONS */
 .stButton>button {
     width: 100%;
     border-radius: 10px;
     height: 3em;
-    font-size: 16px;
     font-weight: bold;
+    background-color: #1F6FEB;
+    color: white;
+}
+
+/* ALERT BOX STYLE */
+.alert {
+    padding: 15px;
+    border-radius: 10px;
+    background: #1A1020;
+    border-left: 5px solid red;
+    color: #fff;
+}
+
+.success {
+    padding: 15px;
+    border-radius: 10px;
+    background: #0D1F17;
+    border-left: 5px solid #22C55E;
 }
 
 </style>
@@ -55,207 +80,120 @@ h1, h2, h3, p, label, span {
 # -----------------------------
 # HEADER
 # -----------------------------
-st.title("🛡️ Network Defender Challenge")
-st.subheader("Aprende Redes, VLAN y OT protegiendo una fábrica digital")
+st.title("🛡️ CYBER OT DEFENDER")
+st.caption("Industrial Security Simulation - Protect the Factory Network")
 
 # -----------------------------
-# SIDEBAR DEBUG + STATUS
+# HUD
 # -----------------------------
 with st.sidebar:
-    st.header("📊 Estado del Juego")
+    st.markdown("## 🎮 SYSTEM HUD")
 
-    st.metric("Puntos", st.session_state.score)
-    st.metric("Nivel", st.session_state.level)
+    st.markdown("### 📊 Score")
+    st.metric("", st.session_state.score)
 
-    st.write("DEBUG")
-    st.write("finished:", st.session_state.finished)
+    st.markdown("### 🧭 Mission")
+    st.metric("", st.session_state.mission)
 
-    progress = min(st.session_state.level / 5, 1.0)
+    progress = min(st.session_state.mission / 4, 1)
     st.progress(progress)
 
-# -----------------------------
-# SAFETY VARIABLES
-# -----------------------------
-level = st.session_state.level
-finished = st.session_state.finished
+    st.markdown("---")
+    st.write("⚠️ OT Network Status: STABLE")
 
 # -----------------------------
-# LEVEL FLOW (SAFE)
+# MISSIONS DATA (ENGINE)
 # -----------------------------
-if finished:
+missions = [
+    {
+        "title": "🌐 Mission 1: Network Breach Analysis",
+        "text": "A new OT network is being deployed in a factory. Identify the correct purpose of a network.",
+        "question": "¿Cuál es el objetivo de una red?",
+        "options": [
+            "Apagar servidores",
+            "Compartir información y recursos",
+            "Romper sistemas OT"
+        ],
+        "answer": "Compartir información y recursos",
+        "reward": 10
+    },
+    {
+        "title": "🔀 Mission 2: VLAN Segmentation",
+        "text": "Se detecta tráfico cruzado entre OT y invitados.",
+        "question": "¿Qué tecnología separa redes correctamente?",
+        "options": ["VLANs", "Bluetooth", "HDMI"],
+        "answer": "VLANs",
+        "reward": 20
+    },
+    {
+        "title": "🚨 Mission 3: Attack Detected",
+        "text": "Un dispositivo infectado intenta moverse lateralmente.",
+        "question": "¿Cómo se contiene el ataque?",
+        "options": ["Más cables", "Usar VLANs", "Reiniciar router"],
+        "answer": "Usar VLANs",
+        "reward": 25
+    },
+    {
+        "title": "🏭 Mission 4: IT vs OT Control",
+        "text": "Clasifica el entorno industrial.",
+        "question": "¿Qué pertenece a OT?",
+        "options": ["Servidor web", "PLC industrial", "Correo corporativo"],
+        "answer": "PLC industrial",
+        "reward": 30
+    }
+]
 
-    st.title("🏆 Resultado Final")
+# -----------------------------
+# GAME COMPLETED
+# -----------------------------
+if st.session_state.finished:
 
-    st.metric("Puntaje Final", st.session_state.score)
+    st.markdown("## 🏆 MISSION COMPLETE")
 
-    if st.session_state.score >= 100:
-        st.success("🏆 Arquitecto de Redes")
+    st.success(f"Puntaje final: {st.session_state.score}")
+
+    if st.session_state.score >= 80:
         st.balloons()
-
-    elif st.session_state.score >= 70:
-        st.info("🛡️ Administrador Seguro")
-
+        st.markdown("### 🏆 OT SECURITY ARCHITECT")
+    elif st.session_state.score >= 50:
+        st.markdown("### 🛡️ OT SECURITY OPERATOR")
     else:
-        st.warning("⚠️ Red Vulnerable")
+        st.markdown("### ⚠️ NETWORK VULNERABLE")
 
-    st.write("""
-    Aprendiste:
-    - Redes básicas
-    - VLANs
-    - Seguridad IT/OT
-    - Protección industrial
-    """)
-
-    if st.button("🔄 Reiniciar"):
+    if st.button("🔄 Restart Simulation"):
         st.session_state.score = 0
-        st.session_state.level = 1
+        st.session_state.mission = 0
         st.session_state.finished = False
         st.rerun()
 
 # -----------------------------
-# LEVEL 1
-# -----------------------------
-elif level == 1:
-
-    st.markdown("## 🌐 Nivel 1 - Redes")
-
-    answer = st.radio(
-        "¿Cuál es el objetivo principal de una red?",
-        ["Apagar computadoras", "Compartir información y recursos", "Crear virus"]
-    )
-
-    if st.button("Validar"):
-
-        if answer == "Compartir información y recursos":
-            st.success("Correcto")
-            st.session_state.score += 10
-        else:
-            st.error("Incorrecto")
-
-        st.session_state.level = 2
-        st.rerun()
-
-# -----------------------------
-# LEVEL 2
-# -----------------------------
-elif level == 2:
-
-    st.markdown("## 🔀 Nivel 2 - VLANs")
-
-    col1, col2, col3 = st.columns(3)
-
-    with col1:
-        oficina = st.selectbox("Oficina", ["Seleccionar", "VLAN 10", "VLAN 20", "VLAN 30"])
-
-    with col2:
-        invitados = st.selectbox("Invitados", ["Seleccionar", "VLAN 10", "VLAN 20", "VLAN 30"])
-
-    with col3:
-        ot = st.selectbox("Producción OT", ["Seleccionar", "VLAN 10", "VLAN 20", "VLAN 30"])
-
-    if st.button("Configurar"):
-
-        puntos = 0
-
-        if oficina == "VLAN 10":
-            puntos += 10
-        if invitados == "VLAN 20":
-            puntos += 10
-        if ot == "VLAN 30":
-            puntos += 10
-
-        st.session_state.score += puntos
-        st.session_state.level = 3
-
-        st.rerun()
-
-# -----------------------------
-# LEVEL 3
-# -----------------------------
-elif level == 3:
-
-    st.markdown("## 🚨 Nivel 3 - Ataque")
-
-    answer = st.radio(
-        "¿Qué evita propagación de ataques?",
-        ["Más cables", "Reiniciar internet", "Usar VLANs"]
-    )
-
-    if st.button("Responder"):
-
-        if answer == "Usar VLANs":
-            st.success("Correcto")
-            st.session_state.score += 20
-        else:
-            st.error("Incorrecto")
-
-        st.session_state.level = 4
-        st.rerun()
-
-# -----------------------------
-# LEVEL 4
-# -----------------------------
-elif level == 4:
-
-    st.markdown("## 🏭 Nivel 4 - IT vs OT")
-
-    correo = st.selectbox("Correo", ["Seleccionar", "IT", "OT"])
-    plc = st.selectbox("PLC", ["Seleccionar", "IT", "OT"])
-    server = st.selectbox("Servidor", ["Seleccionar", "IT", "OT"])
-    sensor = st.selectbox("Sensor", ["Seleccionar", "IT", "OT"])
-
-    if st.button("Validar"):
-
-        puntos = 0
-
-        if correo == "IT":
-            puntos += 10
-        if plc == "OT":
-            puntos += 10
-        if server == "IT":
-            puntos += 10
-        if sensor == "OT":
-            puntos += 10
-
-        st.session_state.score += puntos
-        st.session_state.level = 5
-
-        st.rerun()
-
-# -----------------------------
-# LEVEL 5 FINAL
-# -----------------------------
-elif level == 5:
-
-    st.markdown("## 🛡️ Nivel Final")
-
-    firewall = st.checkbox("Firewall")
-    vlan = st.checkbox("VLAN OT")
-    invitados = st.checkbox("Permitir invitados OT")
-    monitor = st.checkbox("Monitoreo")
-
-    if st.button("Defender"):
-
-        puntos = 0
-
-        if firewall:
-            puntos += 20
-        if vlan:
-            puntos += 30
-        if monitor:
-            puntos += 20
-        if invitados:
-            puntos -= 30
-
-        st.session_state.score += puntos
-        st.session_state.finished = True
-
-        st.rerun()
-
-# -----------------------------
-# SAFETY FALLBACK (NO BLANK SCREEN)
+# GAME LOOP
 # -----------------------------
 else:
-    st.error("⚠️ Estado inválido del juego")
-    st.write("Level:", st.session_state.level)
-    st.write("Finished:", st.session_state.finished)
+
+    m = missions[st.session_state.mission]
+
+    st.markdown(f"## {m['title']}")
+    st.write(m["text"])
+
+    st.markdown("---")
+    st.subheader(m["question"])
+
+    choice = st.radio("Selecciona una opción:", m["options"])
+
+    if st.button("🚀 Execute Action"):
+
+        if choice == m["answer"]:
+            st.markdown('<div class="success">✔ Access Granted - Correct Decision</div>', unsafe_allow_html=True)
+            st.session_state.score += m["reward"]
+        else:
+            st.markdown('<div class="alert">✖ Security Mistake Detected</div>', unsafe_allow_html=True)
+
+        time.sleep(0.8)
+
+        st.session_state.mission += 1
+
+        if st.session_state.mission >= len(missions):
+            st.session_state.finished = True
+
+        st.rerun()
