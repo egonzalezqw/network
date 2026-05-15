@@ -2,13 +2,15 @@ import streamlit as st
 import random
 
 # =================================================
-# 🧠 ESTADO SEGURO
+# 🧠 STATE ENGINE
 # =================================================
 def init_state():
     defaults = {
         "score": 0,
-        "index": 0,
-        "finished": False
+        "health": 100,
+        "logs": [],
+        "incident": None,
+        "running": True
     }
 
     for k, v in defaults.items():
@@ -17,129 +19,171 @@ def init_state():
 
 
 # =================================================
-# 🎮 PREGUNTAS (6 FIJAS)
+# 🌐 INCIDENTS (REDES / VLAN / OT)
 # =================================================
-QUESTIONS = [
+INCIDENTS = [
     {
-        "q": "¿Para qué sirve una red en una empresa?",
-        "options": ["Compartir información", "Apagar computadoras", "Romper sistemas"],
-        "a": "Compartir información"
+        "id": "vlan_misconfig",
+        "title": "⚠️ VLAN Misconfiguration detected between IT and OT",
+        "question": "¿Qué solución es correcta para separar tráfico IT y OT?",
+        "options": ["Routing dinámico", "VLANs", "DNS interno compartido"],
+        "correct": "VLANs",
+        "impact": 20
     },
     {
-        "q": "¿Qué permite separar redes como oficina y producción?",
-        "options": ["VLANs", "Bluetooth", "HDMI"],
-        "a": "VLANs"
+        "id": "broadcast_domain",
+        "title": "📡 Excessive broadcast traffic in production network",
+        "question": "¿Qué reduce dominios de broadcast?",
+        "options": ["Switching L2 sin VLAN", "Segmentación VLAN", "Aumentar cables"],
+        "correct": "Segmentación VLAN",
+        "impact": 20
     },
     {
-        "q": "¿Qué pasa si no hay separación de redes?",
-        "options": ["Más seguridad", "Más riesgo", "Más velocidad"],
-        "a": "Más riesgo"
+        "id": "ot_exposure",
+        "title": "🏭 OT network exposed to corporate users",
+        "question": "¿Cómo aislar correctamente la red OT?",
+        "options": ["Firewall + VLAN segmentation", "WiFi abierto", "Public IP directo"],
+        "correct": "Firewall + VLAN segmentation",
+        "impact": 25
     },
     {
-        "q": "¿Qué es OT en una fábrica?",
-        "options": ["Sistemas industriales", "Red social", "Juego"],
-        "a": "Sistemas industriales"
+        "id": "flat_network",
+        "title": "🔴 Flat network detected (no segmentation)",
+        "question": "¿Cuál es el mayor riesgo de una red plana?",
+        "options": ["Alta latencia", "Movimiento lateral fácil", "Más velocidad"],
+        "correct": "Movimiento lateral fácil",
+        "impact": 25
     },
     {
-        "q": "¿Por qué se separa IT y OT?",
-        "options": ["Para seguridad", "Para jugar", "Para decorar la red"],
-        "a": "Para seguridad"
-    },
-    {
-        "q": "¿Qué ayuda a proteger una red?",
-        "options": ["Segmentación y buenas prácticas", "Dejar todo abierto", "Quitar contraseñas"],
-        "a": "Segmentación y buenas prácticas"
+        "id": "industrial_protocol_risk",
+        "title": "⚙️ Unsecured industrial protocol detected (OT)",
+        "question": "¿Qué mejora la seguridad en OT networks?",
+        "options": [
+            "Segmentación + firewalls industriales",
+            "Más usuarios",
+            "DHCP abierto"
+        ],
+        "correct": "Segmentación + firewalls industriales",
+        "impact": 30
     }
 ]
 
 
 # =================================================
-# 😄 MENSAJES DIVERTIDOS
+# 😄 FEEDBACK DIVERTIDO
 # =================================================
 def msg_correct():
     return [
-        "😎 ¡Correcto! La red te aplaude en silencio.",
-        "🚀 ¡Bien! Nivel de ingeniero en progreso.",
-        "🧠 ¡Excelente! Casi eres administrador de redes OT."
+        "😎 ¡Perfecto! Estás configurando la red como un pro.",
+        "🧠 Correcto! El tráfico OT está bajo control, bien hecho.",
+        "🚀 ¡Excelente! La red está orgullosa de ti.",
+        "🔥 Buen trabajo, esa VLAN está feliz ahora mismo."
     ]
 
 
 def msg_wrong():
     return [
-        "😂 Ups… la red se confundió, pero sigue viva.",
-        "🤔 Casi… pero esa ruta no es la correcta.",
-        "🙈 No exactamente… la red sobrevivirá a tu intento."
+        "😅 No del todo… pero la red aún no colapsa, tranquilo.",
+        "🤔 Ups… esa configuración necesita un poco más de cariño.",
+        "🙈 Casi… pero la red está mirando con preocupación.",
+        "⚠️ No es la mejor decisión… pero se puede mejorar bastante."
     ]
 
 
 # =================================================
-# CONFIG STREAMLIT
+# ⚙️ ENGINE
 # =================================================
-st.set_page_config(
-    page_title="Cyber OT Quiz",
-    page_icon="🛡️",
-    layout="wide"
-)
+def get_incident():
+    return random.choice(INCIDENTS)
 
-st.title("🛡️ Cyber OT Redes - Quiz Básico")
-st.caption("Aprende redes, VLANs e IT/OT de forma simple")
 
+def apply_action(choice, incident):
+
+    if choice == incident["correct"]:
+        st.session_state.score += incident["impact"]
+        st.session_state.health = min(100, st.session_state.health + 5)
+
+        st.session_state.logs.append(
+            f"✔ Correcto: {incident['title']}"
+        )
+
+        st.success(random.choice(msg_correct()))
+        return True
+
+    else:
+        st.session_state.health -= 10
+
+        st.session_state.logs.append(
+            f"✖ Incorrecto: {incident['title']}"
+        )
+
+        st.warning(random.choice(msg_wrong()))
+        return False
+
+
+def next_incident():
+    st.session_state.incident = get_incident()
+
+
+# =================================================
+# 🎨 UI
+# =================================================
+def render_hud():
+    st.sidebar.title("🛡️ OT NETWORK HUD")
+
+    st.sidebar.metric("Score", st.session_state.score)
+    st.sidebar.metric("Health", st.session_state.health)
+
+    st.sidebar.progress(st.session_state.health / 100)
+
+    st.sidebar.markdown("---")
+    st.sidebar.write("📜 Network Logs")
+
+    for log in st.session_state.logs[-6:]:
+        st.sidebar.write("•", log)
+
+
+def render_incident(incident):
+
+    st.title("🌐 OT NETWORK TRAINING SIMULATOR")
+
+    st.markdown("## 🚨 Network Event")
+    st.error(incident["title"])
+
+    st.markdown("### 🧠 Concept Question")
+    st.write(incident["question"])
+
+    choice = st.radio("Select answer:", incident["options"])
+
+    if st.button("Apply Network Action"):
+
+        apply_action(choice, incident)
+
+        next_incident()
+        st.rerun()
+
+
+def game_over():
+    st.error("💀 NETWORK CRITICAL FAILURE")
+    st.write("Final Score:", st.session_state.score)
+
+    if st.button("Restart"):
+        for k in list(st.session_state.keys()):
+            del st.session_state[k]
+        st.rerun()
+
+
+# =================================================
+# 🚀 APP
+# =================================================
 init_state()
 
-# =================================================
-# 🔐 CONTROL DE FIN SEGURO (EVITA INDEX ERROR)
-# =================================================
-if st.session_state.index >= len(QUESTIONS):
-    st.session_state.finished = True
+if st.session_state.incident is None:
+    next_incident()
 
+render_hud()
 
-# =================================================
-# 🏁 PANTALLA FINAL
-# =================================================
-if st.session_state.finished:
-
-    st.success("🎉 Quiz terminado")
-
-    st.metric("Puntaje final", st.session_state.score)
-
-    if st.session_state.score >= 5:
-        st.balloons()
-        st.markdown("🏆 ¡Buen trabajo! Entiendes lo básico de redes OT.")
-    else:
-        st.markdown("🙂 Buen intento. Sigue practicando redes.")
-
-    if st.button("🔄 Reiniciar"):
-        st.session_state.score = 0
-        st.session_state.index = 0
-        st.session_state.finished = False
-        st.rerun()
-
-# =================================================
-# 🎮 JUEGO PRINCIPAL
-# =================================================
+if st.session_state.health <= 0:
+    game_over()
 else:
-
-    q = QUESTIONS[st.session_state.index]
-
-    st.sidebar.metric("Puntaje", st.session_state.score)
-    st.sidebar.progress(st.session_state.index / len(QUESTIONS))
-
-    st.subheader(q["q"])
-
-    choice = st.radio("Selecciona una opción:", q["options"])
-
-    if st.button("Responder"):
-
-        if choice == q["a"]:
-            st.success(random.choice(msg_correct()))
-            st.session_state.score += 1
-        else:
-            st.warning(random.choice(msg_wrong()))
-
-        # avanzar seguro sin romper índice
-        st.session_state.index += 1
-
-        if st.session_state.index >= len(QUESTIONS):
-            st.session_state.finished = True
-
-        st.rerun()
+    render_incident(st.session_state.incident)
