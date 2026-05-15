@@ -54,48 +54,56 @@ QUESTIONS = [
 
 
 # =================================================
-# 😄 MENSAJES DIVERTIDOS
+# 😄 FEEDBACK
 # =================================================
 def msg_correct():
     return [
-        "😎 ¡Correcto! La red está orgullosa de ti.",
-        "🚀 ¡Bien hecho! Nivel ingeniero activado.",
-        "🧠 ¡Excelente! Esto ya suena a redes OT reales."
+        "😎 Red estable. Buen trabajo.",
+        "🚀 Decisión correcta en arquitectura de red.",
+        "🧠 Nivel OT en progreso positivo."
     ]
 
 
 def msg_wrong():
     return [
-        "😂 Ups… la red sobrevivió, pero estuvo cerca del caos.",
-        "🤔 Casi… pero esa ruta no es la ideal.",
-        "🙈 No del todo… la red necesita un café y otro intento."
+        "⚠️ La red no está feliz con esa decisión.",
+        "🤔 Error de diseño, pero recuperable.",
+        "😂 Casi… pero la red se desvió un poco."
     ]
 
 
 # =================================================
-# 🎨 ESTÉTICA CYBER OT
+# 🎨 UI STYLE
 # =================================================
 st.set_page_config(
-    page_title="Cyber OT Quiz",
+    page_title="Cyber OT Interactive Quiz",
     page_icon="🛡️",
     layout="wide"
 )
 
 st.markdown("""
 <style>
+
 .stApp {
-    background-color: #070B14;
+    background-color: #050816;
     color: #E6F1FF;
 }
 
-h1, h2, h3, p, label {
-    color: #E6F1FF !important;
+/* TITLES */
+h1, h2, h3 {
+    color: #38BDF8 !important;
 }
 
-.block-container {
-    padding-top: 2rem;
+/* CARD STYLE */
+.card {
+    background: #0B1220;
+    padding: 18px;
+    border-radius: 14px;
+    border: 1px solid #1F2A44;
+    margin-bottom: 15px;
 }
 
+/* BUTTONS */
 .stButton>button {
     width: 100%;
     border-radius: 10px;
@@ -105,72 +113,100 @@ h1, h2, h3, p, label {
     color: white;
 }
 
+/* PROGRESS */
 .stProgress > div > div > div {
     background-color: #38BDF8;
 }
+
 </style>
 """, unsafe_allow_html=True)
 
 
-st.title("🛡️ Cyber OT Redes - Quiz Básico")
-st.caption("Simulación educativa de redes, VLANs e IT/OT")
-
+# =================================================
+# INIT
+# =================================================
 init_state()
 
+# progreso seguro
+progress = st.session_state.index / len(QUESTIONS)
+
 # =================================================
-# 🔐 CONTROL SEGURO
+# SIDEBAR (DASHBOARD)
+# =================================================
+st.sidebar.markdown("## 🛡️ OT CONTROL PANEL")
+st.sidebar.metric("Score", st.session_state.score)
+st.sidebar.progress(progress)
+st.sidebar.write(f"Pregunta {st.session_state.index + 1} / {len(QUESTIONS)}")
+
+
+# =================================================
+# FIN DEL JUEGO
 # =================================================
 if st.session_state.index >= len(QUESTIONS):
     st.session_state.finished = True
 
 
-# =================================================
-# 🏁 FINAL
-# =================================================
 if st.session_state.finished:
 
-    st.success("🎉 Quiz completado")
+    st.markdown("## 🏁 MISIÓN COMPLETADA")
 
-    st.metric("Puntaje final", st.session_state.score)
+    st.markdown(f"""
+    <div class="card">
+    <h3>🎯 Resultado Final</h3>
+    <p>Puntaje: {st.session_state.score}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
     if st.session_state.score >= 5:
+        st.success("🏆 Excelente comprensión de redes OT")
         st.balloons()
-        st.markdown("🏆 ¡Buen trabajo! Entiendes lo básico de redes OT.")
     else:
-        st.markdown("🙂 Buen intento, sigue practicando redes.")
+        st.info("🙂 Buen intento, sigue practicando redes")
 
-    if st.button("🔄 Reiniciar"):
+    if st.button("🔄 Reiniciar simulación"):
         st.session_state.score = 0
         st.session_state.index = 0
         st.session_state.finished = False
         st.rerun()
 
 # =================================================
-# 🎮 JUEGO
+# 🎮 JUEGO INTERACTIVO
 # =================================================
 else:
 
     q = QUESTIONS[st.session_state.index]
 
-    st.sidebar.title("🛡️ PANEL OT")
-    st.sidebar.metric("Puntaje", st.session_state.score)
-    st.sidebar.progress(st.session_state.index / len(QUESTIONS))
+    # EVENT CARD
+    st.markdown(f"""
+    <div class="card">
+        <h3>🌐 Evento de Red</h3>
+        <p>{q["q"]}</p>
+    </div>
+    """, unsafe_allow_html=True)
 
-    st.subheader(q["q"])
+    st.markdown("### 🧠 Toma una decisión")
 
-    choice = st.radio("Selecciona una opción:", q["options"])
+    col1, col2 = st.columns([2, 1])
 
-    if st.button("Responder"):
+    with col1:
+        choice = st.radio("Selecciona la mejor opción:", q["options"])
 
-        if choice == q["a"]:
-            st.success(random.choice(msg_correct()))
-            st.session_state.score += 1
-        else:
-            st.warning(random.choice(msg_wrong()))
+        if st.button("⚡ Ejecutar acción de red"):
 
-        st.session_state.index += 1
+            if choice == q["a"]:
+                st.success(random.choice(msg_correct()))
+                st.session_state.score += 1
+            else:
+                st.warning(random.choice(msg_wrong()))
 
-        if st.session_state.index >= len(QUESTIONS):
-            st.session_state.finished = True
+            st.session_state.index += 1
+            st.rerun()
 
-        st.rerun()
+    with col2:
+        st.markdown("""
+        <div class="card">
+            <h4>🧭 Estado del sistema</h4>
+            <p>Simulación OT activa</p>
+            <p>Red: Estable</p>
+        </div>
+        """, unsafe_allow_html=True)
