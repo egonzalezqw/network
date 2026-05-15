@@ -2,15 +2,15 @@ import streamlit as st
 import random
 
 # =================================================
-# 🧠 STATE ENGINE
+# 🧠 MOTOR DE ESTADO
 # =================================================
 def init_state():
     defaults = {
-        "score": 0,
-        "health": 100,
+        "puntos": 0,
+        "salud": 100,
         "logs": [],
-        "incident": None,
-        "running": True
+        "incidente": None,
+        "activo": True
     }
 
     for k, v in defaults.items():
@@ -19,140 +19,146 @@ def init_state():
 
 
 # =================================================
-# 🌐 INCIDENTS ALINEADOS A REDES / VLAN / OT
+# 🌐 INCIDENTES (REDES / VLAN / OT)
 # =================================================
-INCIDENTS = [
+INCIDENTES = [
     {
-        "id": "vlan_misconfig",
-        "title": "⚠️ VLAN Misconfiguration detected between IT and OT",
-        "question": "¿Qué solución es correcta para separar tráfico IT y OT?",
-        "options": ["Routing dinámico", "VLANs", "DNS interno compartido"],
-        "correct": "VLANs",
-        "impact": 20
+        "id": "vlan_mala_configuracion",
+        "titulo": "⚠️ Mala configuración de VLAN entre IT y OT",
+        "pregunta": "¿Cuál es la solución correcta para separar el tráfico IT y OT?",
+        "opciones": ["Routing dinámico", "VLANs", "DNS compartido"],
+        "correcta": "VLANs",
+        "puntos": 20
     },
     {
-        "id": "broadcast_domain",
-        "title": "📡 Excessive broadcast traffic in production network",
-        "question": "¿Qué reduce dominios de broadcast?",
-        "options": ["Switching L2 sin VLAN", "Segmentación VLAN", "Aumentar cables"],
-        "correct": "Segmentación VLAN",
-        "impact": 20
+        "id": "broadcast_excesivo",
+        "titulo": "📡 Tráfico broadcast excesivo en la red de producción",
+        "pregunta": "¿Qué ayuda a reducir los dominios de broadcast?",
+        "opciones": ["Switching sin VLAN", "Segmentación VLAN", "Más cables"],
+        "correcta": "Segmentación VLAN",
+        "puntos": 20
     },
     {
-        "id": "ot_exposure",
-        "title": "🏭 OT network exposed to corporate users",
-        "question": "¿Cómo aislar correctamente la red OT?",
-        "options": ["Firewall + VLAN segmentation", "WiFi abierto", "Public IP directo"],
-        "correct": "Firewall + VLAN segmentation",
-        "impact": 25
+        "id": "exposicion_ot",
+        "titulo": "🏭 Red OT expuesta a usuarios corporativos",
+        "pregunta": "¿Cómo se debe aislar correctamente la red OT?",
+        "opciones": ["Firewall + VLANs", "WiFi abierto", "IP pública directa"],
+        "correcta": "Firewall + VLANs",
+        "puntos": 25
     },
     {
-        "id": "flat_network",
-        "title": "🔴 Flat network detected (no segmentation)",
-        "question": "¿Cuál es el mayor riesgo de una red plana?",
-        "options": ["Alta latencia", "Movimiento lateral fácil", "Más velocidad"],
-        "correct": "Movimiento lateral fácil",
-        "impact": 25
+        "id": "red_plana",
+        "titulo": "🔴 Red plana detectada (sin segmentación)",
+        "pregunta": "¿Cuál es el principal riesgo de una red plana?",
+        "opciones": ["Más velocidad", "Movimiento lateral fácil", "Menos latencia"],
+        "correcta": "Movimiento lateral fácil",
+        "puntos": 25
     },
     {
-        "id": "industrial_protocol_risk",
-        "title": "⚙️ Unsecured industrial protocol detected (OT)",
-        "question": "¿Qué mejora la seguridad en OT networks?",
-        "options": ["Segmentación + firewalls industriales", "Más usuarios", "DHCP abierto"],
-        "correct": "Segmentación + firewalls industriales",
-        "impact": 30
+        "id": "protocolo_industrial",
+        "titulo": "⚙️ Protocolo industrial sin seguridad detectado",
+        "pregunta": "¿Qué mejora la seguridad en redes OT?",
+        "opciones": [
+            "Segmentación + firewalls industriales",
+            "Más usuarios conectados",
+            "DHCP abierto"
+        ],
+        "correcta": "Segmentación + firewalls industriales",
+        "puntos": 30
     }
 ]
 
 
 # =================================================
-# ⚙️ ENGINE
+# ⚙️ MOTOR DEL JUEGO
 # =================================================
-def get_incident():
-    return random.choice(INCIDENTS)
+def obtener_incidente():
+    return random.choice(INCIDENTES)
 
 
-def apply_action(choice, incident):
+def aplicar_accion(seleccion, incidente):
 
-    if choice == incident["correct"]:
-        st.session_state.score += incident["impact"]
-        st.session_state.health = min(100, st.session_state.health + 5)
-        st.session_state.logs.append(f"✔ Correct: {incident['title']}")
+    if seleccion == incidente["correcta"]:
+        st.session_state.puntos += incidente["puntos"]
+        st.session_state.salud = min(100, st.session_state.salud + 5)
+        st.session_state.logs.append(f"✔ Correcto: {incidente['titulo']}")
         return True
     else:
-        st.session_state.health -= 10
-        st.session_state.logs.append(f"✖ Incorrect: {incident['title']}")
+        st.session_state.salud -= 10
+        st.session_state.logs.append(f"✖ Incorrecto: {incidente['titulo']}")
         return False
 
 
-def next_incident():
-    st.session_state.incident = get_incident()
+def siguiente_incidente():
+    st.session_state.incidente = obtener_incidente()
 
 
 # =================================================
-# 🎨 UI
+# 🎨 INTERFAZ
 # =================================================
-def render_hud():
-    st.sidebar.title("🛡️ OT NETWORK HUD")
+def mostrar_hud():
 
-    st.sidebar.metric("Score", st.session_state.score)
-    st.sidebar.metric("Health", st.session_state.health)
+    st.sidebar.title("🛡️ PANEL OT / REDES")
 
-    st.sidebar.progress(st.session_state.health / 100)
+    st.sidebar.metric("Puntos", st.session_state.puntos)
+    st.sidebar.metric("Salud de Red", st.session_state.salud)
+
+    st.sidebar.progress(st.session_state.salud / 100)
 
     st.sidebar.markdown("---")
-    st.sidebar.write("📜 Network Logs")
+    st.sidebar.write("📜 Registro de eventos")
 
     for log in st.session_state.logs[-6:]:
         st.sidebar.write("•", log)
 
 
-def render_incident(incident):
+def mostrar_incidente(incidente):
 
-    st.title("🌐 OT NETWORK TRAINING SIMULATOR")
+    st.title("🌐 SIMULADOR DE REDES OT")
 
-    st.markdown("## 🚨 Network Event")
-    st.error(incident["title"])
+    st.markdown("## 🚨 Evento de Red")
+    st.error(incidente["titulo"])
 
-    st.markdown("### 🧠 Concept Question")
-    st.write(incident["question"])
+    st.markdown("### 🧠 Pregunta de arquitectura de red")
+    st.write(incidente["pregunta"])
 
-    choice = st.radio("Select answer:", incident["options"])
+    opcion = st.radio("Selecciona una respuesta:", incidente["opciones"])
 
-    if st.button("Apply Network Action"):
+    if st.button("Aplicar acción de red"):
 
-        correct = apply_action(choice, incident)
+        correcto = aplicar_accion(opcion, incidente)
 
-        if correct:
-            st.success("✔ Correct network design decision")
+        if correcto:
+            st.success("✔ Decisión correcta de red")
         else:
-            st.warning("✖ Incorrect design choice")
+            st.warning("✖ Decisión incorrecta")
 
-        next_incident()
+        siguiente_incidente()
         st.rerun()
 
 
 def game_over():
-    st.error("💀 NETWORK CRITICAL FAILURE")
-    st.write("Final Score:", st.session_state.score)
 
-    if st.button("Restart"):
+    st.error("💀 FALLA CRÍTICA EN LA RED OT")
+    st.write("Puntaje final:", st.session_state.puntos)
+
+    if st.button("Reiniciar simulación"):
         for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
 
 
 # =================================================
-# 🚀 APP
+# 🚀 EJECUCIÓN PRINCIPAL
 # =================================================
 init_state()
 
-if st.session_state.incident is None:
-    next_incident()
+if st.session_state.incidente is None:
+    siguiente_incidente()
 
-render_hud()
+mostrar_hud()
 
-if st.session_state.health <= 0:
+if st.session_state.salud <= 0:
     game_over()
 else:
-    render_incident(st.session_state.incident)
+    mostrar_incidente(st.session_state.incidente)
