@@ -1,16 +1,13 @@
 import streamlit as st
-import random
 
 # =================================================
-# 🧠 MOTOR DE ESTADO
+# 🧠 ESTADO
 # =================================================
 def init_state():
     defaults = {
-        "puntos": 0,
-        "salud": 100,
-        "logs": [],
-        "incidente": None,
-        "activo": True
+        "score": 0,
+        "index": 0,
+        "finished": False
     }
 
     for k, v in defaults.items():
@@ -19,146 +16,120 @@ def init_state():
 
 
 # =================================================
-# 🌐 INCIDENTES (REDES / VLAN / OT)
+# 🎮 PREGUNTAS (BÁSICAS / NO TÉCNICAS)
 # =================================================
-INCIDENTES = [
+QUESTIONS = [
     {
-        "id": "vlan_mala_configuracion",
-        "titulo": "⚠️ Mala configuración de VLAN entre IT y OT",
-        "pregunta": "¿Cuál es la solución correcta para separar el tráfico IT y OT?",
-        "opciones": ["Routing dinámico", "VLANs", "DNS compartido"],
-        "correcta": "VLANs",
-        "puntos": 20
+        "q": "¿Para qué sirve una red en una empresa?",
+        "options": ["Compartir información", "Apagar computadoras", "Romper sistemas"],
+        "a": "Compartir información"
     },
     {
-        "id": "broadcast_excesivo",
-        "titulo": "📡 Tráfico broadcast excesivo en la red de producción",
-        "pregunta": "¿Qué ayuda a reducir los dominios de broadcast?",
-        "opciones": ["Switching sin VLAN", "Segmentación VLAN", "Más cables"],
-        "correcta": "Segmentación VLAN",
-        "puntos": 20
+        "q": "¿Qué permite separar redes como oficina y producción?",
+        "options": ["VLANs", "Mouse inalámbrico", "Bluetooth"],
+        "a": "VLANs"
     },
     {
-        "id": "exposicion_ot",
-        "titulo": "🏭 Red OT expuesta a usuarios corporativos",
-        "pregunta": "¿Cómo se debe aislar correctamente la red OT?",
-        "opciones": ["Firewall + VLANs", "WiFi abierto", "IP pública directa"],
-        "correcta": "Firewall + VLANs",
-        "puntos": 25
+        "q": "¿Qué pasa si todo está en una sola red sin separación?",
+        "options": ["Más seguridad", "Más riesgo", "Más orden"],
+        "a": "Más riesgo"
     },
     {
-        "id": "red_plana",
-        "titulo": "🔴 Red plana detectada (sin segmentación)",
-        "pregunta": "¿Cuál es el principal riesgo de una red plana?",
-        "opciones": ["Más velocidad", "Movimiento lateral fácil", "Menos latencia"],
-        "correcta": "Movimiento lateral fácil",
-        "puntos": 25
+        "q": "¿Qué es OT en una fábrica?",
+        "options": ["Sistemas industriales", "Red social", "Videojuegos"],
+        "a": "Sistemas industriales"
     },
     {
-        "id": "protocolo_industrial",
-        "titulo": "⚙️ Protocolo industrial sin seguridad detectado",
-        "pregunta": "¿Qué mejora la seguridad en redes OT?",
-        "opciones": [
-            "Segmentación + firewalls industriales",
-            "Más usuarios conectados",
-            "DHCP abierto"
-        ],
-        "correcta": "Segmentación + firewalls industriales",
-        "puntos": 30
+        "q": "¿Por qué se separa IT y OT?",
+        "options": ["Para seguridad", "Para jugar mejor", "Para más cables"],
+        "a": "Para seguridad"
+    },
+    {
+        "q": "¿Qué ayuda a proteger una red?",
+        "options": ["Buenas prácticas y segmentación", "Dejar todo abierto", "Quitar contraseñas"],
+        "a": "Buenas prácticas y segmentación"
     }
 ]
 
 
 # =================================================
-# ⚙️ MOTOR DEL JUEGO
+# 🎭 MENSAJES DIVERTIDOS
 # =================================================
-def obtener_incidente():
-    return random.choice(INCIDENTES)
+def msg_correct():
+    return [
+        "😎 ¡Correcto! Hackeaste el conocimiento con éxito.",
+        "🧠 ¡Bien hecho! Eres casi un ingeniero de redes Jedi.",
+        "🚀 ¡Excelente! La red está orgullosa de ti."
+    ]
 
 
-def aplicar_accion(seleccion, incidente):
-
-    if seleccion == incidente["correcta"]:
-        st.session_state.puntos += incidente["puntos"]
-        st.session_state.salud = min(100, st.session_state.salud + 5)
-        st.session_state.logs.append(f"✔ Correcto: {incidente['titulo']}")
-        return True
-    else:
-        st.session_state.salud -= 10
-        st.session_state.logs.append(f"✖ Incorrecto: {incidente['titulo']}")
-        return False
-
-
-def siguiente_incidente():
-    st.session_state.incidente = obtener_incidente()
+def msg_wrong():
+    return [
+        "😂 No exactamente… pero la red sigue funcionando, respira tranquilo.",
+        "🤔 Casi… pero esa respuesta tomó el camino equivocado en la autopista de datos.",
+        "🙈 Ups… la red se confundió contigo, pero todo bien."
+    ]
 
 
 # =================================================
-# 🎨 INTERFAZ
+# 🎨 UI
 # =================================================
-def mostrar_hud():
+st.set_page_config(page_title="Cyber OT Quiz", page_icon="🛡️", layout="wide")
 
-    st.sidebar.title("🛡️ PANEL OT / REDES")
+st.title("🛡️ Cyber OT Redes - Quiz Básico")
+st.caption("Aprende redes, VLANs y OT de forma sencilla y divertida")
 
-    st.sidebar.metric("Puntos", st.session_state.puntos)
-    st.sidebar.metric("Salud de Red", st.session_state.salud)
-
-    st.sidebar.progress(st.session_state.salud / 100)
-
-    st.sidebar.markdown("---")
-    st.sidebar.write("📜 Registro de eventos")
-
-    for log in st.session_state.logs[-6:]:
-        st.sidebar.write("•", log)
-
-
-def mostrar_incidente(incidente):
-
-    st.title("🌐 SIMULADOR DE REDES OT")
-
-    st.markdown("## 🚨 Evento de Red")
-    st.error(incidente["titulo"])
-
-    st.markdown("### 🧠 Pregunta de arquitectura de red")
-    st.write(incidente["pregunta"])
-
-    opcion = st.radio("Selecciona una respuesta:", incidente["opciones"])
-
-    if st.button("Aplicar acción de red"):
-
-        correcto = aplicar_accion(opcion, incidente)
-
-        if correcto:
-            st.success("✔ Decisión correcta de red")
-        else:
-            st.warning("✖ Decisión incorrecta")
-
-        siguiente_incidente()
-        st.rerun()
-
-
-def game_over():
-
-    st.error("💀 FALLA CRÍTICA EN LA RED OT")
-    st.write("Puntaje final:", st.session_state.puntos)
-
-    if st.button("Reiniciar simulación"):
-        for k in list(st.session_state.keys()):
-            del st.session_state[k]
-        st.rerun()
-
-
-# =================================================
-# 🚀 EJECUCIÓN PRINCIPAL
-# =================================================
 init_state()
 
-if st.session_state.incidente is None:
-    siguiente_incidente()
+q = QUESTIONS[st.session_state.index]
 
-mostrar_hud()
+st.sidebar.metric("Puntaje", st.session_state.score)
+st.sidebar.progress(st.session_state.index / len(QUESTIONS))
 
-if st.session_state.salud <= 0:
-    game_over()
+
+# =================================================
+# 🧠 FINAL DEL JUEGO
+# =================================================
+if st.session_state.finished:
+
+    st.success("🎉 Quiz terminado")
+
+    st.metric("Resultado final", st.session_state.score)
+
+    if st.session_state.score >= 5:
+        st.balloons()
+        st.markdown("🏆 ¡Buen trabajo! Entiendes lo básico de redes OT.")
+    else:
+        st.markdown("🙂 ¡Buen intento! La red necesita más práctica contigo.")
+
+    if st.button("🔄 Reiniciar"):
+        st.session_state.score = 0
+        st.session_state.index = 0
+        st.session_state.finished = False
+        st.rerun()
+
+# =================================================
+# 🎮 JUEGO
+# =================================================
 else:
-    mostrar_incidente(st.session_state.incidente)
+
+    st.subheader(q["q"])
+
+    choice = st.radio("Selecciona una opción:", q["options"])
+
+    if st.button("Responder"):
+
+        if choice == q["a"]:
+            import random
+            st.success(random.choice(msg_correct()))
+            st.session_state.score += 1
+        else:
+            import random
+            st.warning(random.choice(msg_wrong()))
+
+        st.session_state.index += 1
+
+        if st.session_state.index >= len(QUESTIONS):
+            st.session_state.finished = True
+
+        st.rerun()
