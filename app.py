@@ -2,14 +2,14 @@ import streamlit as st
 import random
 
 # =================================================
-# 🧠 STATE ENGINE (SIEMPRE CONSISTENTE)
+# 🧠 STATE ENGINE
 # =================================================
 def init_state():
     defaults = {
         "score": 0,
         "health": 100,
-        "incident_id": None,
         "logs": [],
+        "incident": None,
         "running": True
     }
 
@@ -19,70 +19,89 @@ def init_state():
 
 
 # =================================================
-# 🚨 INCIDENT ENGINE (SIN STRINGS FRÁGILES)
+# 🌐 INCIDENTS ALINEADOS A REDES / VLAN / OT
 # =================================================
 INCIDENTS = [
     {
-        "id": "malware_hmi",
-        "title": "Malware detected in HMI",
-        "options": ["Isolate OT VLAN", "Ignore alert", "Reboot PLC"],
-        "correct": "Isolate OT VLAN",
+        "id": "vlan_misconfig",
+        "title": "⚠️ VLAN Misconfiguration detected between IT and OT",
+        "question": "¿Qué solución es correcta para separar tráfico IT y OT?",
+        "options": ["Routing dinámico", "VLANs", "DNS interno compartido"],
+        "correct": "VLANs",
         "impact": 20
     },
     {
-        "id": "unauth_device",
-        "title": "Unauthorized device detected",
-        "options": ["Block MAC address", "Disable firewall", "Open port 80"],
-        "correct": "Block MAC address",
+        "id": "broadcast_domain",
+        "title": "📡 Excessive broadcast traffic in production network",
+        "question": "¿Qué reduce dominios de broadcast?",
+        "options": ["Switching L2 sin VLAN", "Segmentación VLAN", "Aumentar cables"],
+        "correct": "Segmentación VLAN",
         "impact": 20
     },
     {
-        "id": "lateral_movement",
-        "title": "Lateral movement detected in OT network",
-        "options": ["Enable segmentation", "Increase bandwidth", "Disable logs"],
-        "correct": "Enable segmentation",
+        "id": "ot_exposure",
+        "title": "🏭 OT network exposed to corporate users",
+        "question": "¿Cómo aislar correctamente la red OT?",
+        "options": ["Firewall + VLAN segmentation", "WiFi abierto", "Public IP directo"],
+        "correct": "Firewall + VLAN segmentation",
         "impact": 25
+    },
+    {
+        "id": "flat_network",
+        "title": "🔴 Flat network detected (no segmentation)",
+        "question": "¿Cuál es el mayor riesgo de una red plana?",
+        "options": ["Alta latencia", "Movimiento lateral fácil", "Más velocidad"],
+        "correct": "Movimiento lateral fácil",
+        "impact": 25
+    },
+    {
+        "id": "industrial_protocol_risk",
+        "title": "⚙️ Unsecured industrial protocol detected (OT)",
+        "question": "¿Qué mejora la seguridad en OT networks?",
+        "options": ["Segmentación + firewalls industriales", "Más usuarios", "DHCP abierto"],
+        "correct": "Segmentación + firewalls industriales",
+        "impact": 30
     }
 ]
 
 
+# =================================================
+# ⚙️ ENGINE
+# =================================================
 def get_incident():
     return random.choice(INCIDENTS)
 
 
-# =================================================
-# ⚙️ ACTION ENGINE
-# =================================================
-def apply_action(selected, incident):
+def apply_action(choice, incident):
 
-    if selected == incident["correct"]:
+    if choice == incident["correct"]:
         st.session_state.score += incident["impact"]
         st.session_state.health = min(100, st.session_state.health + 5)
-        st.session_state.logs.append(f"✔ Correct response: {incident['title']}")
+        st.session_state.logs.append(f"✔ Correct: {incident['title']}")
         return True
     else:
         st.session_state.health -= 10
-        st.session_state.logs.append(f"✖ Wrong response: {incident['title']}")
+        st.session_state.logs.append(f"✖ Incorrect: {incident['title']}")
         return False
 
 
 def next_incident():
-    st.session_state.incident_id = get_incident()
+    st.session_state.incident = get_incident()
 
 
 # =================================================
-# 🎨 UI ENGINE
+# 🎨 UI
 # =================================================
 def render_hud():
+    st.sidebar.title("🛡️ OT NETWORK HUD")
 
-    st.sidebar.title("🛡️ SOC CONTROL PANEL")
     st.sidebar.metric("Score", st.session_state.score)
     st.sidebar.metric("Health", st.session_state.health)
 
     st.sidebar.progress(st.session_state.health / 100)
 
     st.sidebar.markdown("---")
-    st.sidebar.write("📜 Logs")
+    st.sidebar.write("📜 Network Logs")
 
     for log in st.session_state.logs[-6:]:
         st.sidebar.write("•", log)
@@ -90,53 +109,50 @@ def render_hud():
 
 def render_incident(incident):
 
-    st.title("🛡️ CYBER OT SOC SIMULATOR")
+    st.title("🌐 OT NETWORK TRAINING SIMULATOR")
 
-    st.markdown("## 🚨 Active Incident")
+    st.markdown("## 🚨 Network Event")
     st.error(incident["title"])
 
-    choice = st.radio("Select response:", incident["options"])
+    st.markdown("### 🧠 Concept Question")
+    st.write(incident["question"])
 
-    if st.button("Execute Response"):
+    choice = st.radio("Select answer:", incident["options"])
 
-        result = apply_action(choice, incident)
+    if st.button("Apply Network Action"):
 
-        if result:
-            st.success("Correct mitigation applied")
+        correct = apply_action(choice, incident)
+
+        if correct:
+            st.success("✔ Correct network design decision")
         else:
-            st.warning("Incorrect action taken")
+            st.warning("✖ Incorrect design choice")
 
         next_incident()
         st.rerun()
 
 
-# =================================================
-# 🧠 SAFETY CHECK (NO BLACK SCREEN EVER)
-# =================================================
-def safe_state():
-    if st.session_state.health <= 0:
-        st.session_state.running = False
-
-    if st.session_state.incident_id is None:
-        next_incident()
-
-
-# =================================================
-# 🚀 APP ENTRY POINT
-# =================================================
-init_state()
-safe_state()
-render_hud()
-
-if not st.session_state.running:
-    st.error("💀 SYSTEM COMPROMISED")
+def game_over():
+    st.error("💀 NETWORK CRITICAL FAILURE")
     st.write("Final Score:", st.session_state.score)
 
-    if st.button("Restart Simulation"):
-        for k in st.session_state.keys():
+    if st.button("Restart"):
+        for k in list(st.session_state.keys()):
             del st.session_state[k]
         st.rerun()
 
+
+# =================================================
+# 🚀 APP
+# =================================================
+init_state()
+
+if st.session_state.incident is None:
+    next_incident()
+
+render_hud()
+
+if st.session_state.health <= 0:
+    game_over()
 else:
-    incident = st.session_state.incident_id
-    render_incident(incident)
+    render_incident(st.session_state.incident)
